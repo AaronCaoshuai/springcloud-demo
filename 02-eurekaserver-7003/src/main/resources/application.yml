@@ -1,11 +1,11 @@
 #server
 server:
-  port: 7001
+  port: 7003
 
 #eureka config
 eureka:
   instance:
-    hostname: eurekaserver7001.com #指定eureka主机名称
+    hostname: eurekaserver7003.com #指定eureka主机名称
   server:
     #enable-self-preservation: false #关闭自我保护机制
     renewal-percent-threshold: 0.35 #设置自我保护的阈值为0.35
@@ -13,9 +13,7 @@ eureka:
       register-with-eureka: false #指定是否向注册中心注册自己
       fetch-registry: false #指定此客户端是否能获取eureka注册信息
       service-url: #暴露服务中心地址
-        #eureka 集群配置
         defaultZone: http://eurekaserver7001.com:7001/eureka,http://eurekaserver7002.com:7002/eureka,http://eurekaserver7003.com:7003/eureka
-
 
 
 
