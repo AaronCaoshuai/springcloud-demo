@@ -1,9 +1,20 @@
 #server config
 server:
-  port: 8001
+  port: 8003
+
+#Eureka client config
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:7001/eureka #eureka 注册中心地址
+  instance:
+    instance-id: 02-eurekaprovicer-8003 #
 
 #Spring Data jpa config
 spring:
+  application:
+      name: eurekaprovider
+
   jpa:
 
     generate-ddl: true
@@ -14,13 +25,13 @@ spring:
       ddl-auto: none
 
 
-
   datasource:
     type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.jdbc.Driver
     url: jdbc:mysql://localhost:3306/ssm?useUnicode=true&characterEncoding=utf-8&useInformationSchema=true&useSSL=true
     username: root
     password: root
+
 
 #log config
 logging:
@@ -32,6 +43,8 @@ logging:
     org.hibernate.type.descriptor.sql.BasicBinder: trace
     org.hibernate.type.descriptor.sql.BasicExtractor: trace
     com.abc.msc: debug
+
+
 
 
 
