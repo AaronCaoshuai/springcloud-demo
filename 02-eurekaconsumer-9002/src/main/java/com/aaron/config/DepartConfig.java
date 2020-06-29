@@ -12,7 +12,7 @@ import org.springframework.web.client.RestTemplate;
 public class DepartConfig {
 
     @Bean
-    @LoadBalanced //均衡负载
+    @LoadBalanced //均衡负载 默认使用轮询机制
     public RestTemplate restTemplate(){
         return new RestTemplate();
     }

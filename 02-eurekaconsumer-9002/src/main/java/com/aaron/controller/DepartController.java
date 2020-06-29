@@ -22,7 +22,7 @@ public class DepartController {
 
     @Autowired
     private DiscoveryClient client;
-
+    //修改成使用spring.application.name的方式进行访问
     private static final String SERVICE_PROVIDER = "http://eurekaprovider/";
 
     private static final String SERVICE_DEPART_URL = SERVICE_PROVIDER + "/provider/depart/";
