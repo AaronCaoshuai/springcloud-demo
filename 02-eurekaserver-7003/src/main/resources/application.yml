@@ -10,11 +10,14 @@ eureka:
     #enable-self-preservation: false #关闭自我保护机制
     renewal-percent-threshold: 0.35 #设置自我保护的阈值为0.35
   client:
-      register-with-eureka: false #指定是否向注册中心注册自己
-      fetch-registry: false #指定此客户端是否能获取eureka注册信息
+      #集群环境下必须指定下面两项为true
+      register-with-eureka: true #指定是否向注册中心注册自己
+      fetch-registry: true #指定此客户端是否能获取eureka注册信息
       service-url: #暴露服务中心地址
         defaultZone: http://eurekaserver7001.com:7001/eureka,http://eurekaserver7002.com:7002/eureka,http://eurekaserver7003.com:7003/eureka
 
-
+spring:
+  application:
+    name: eurekaserver
 
 
