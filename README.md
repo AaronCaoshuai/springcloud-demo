@@ -128,6 +128,8 @@ Eureka服务中心 02-eurekaserver-7001 **单节点Eureka Server**
 
 服务消费者:02-eurekaconsumer-9002
 
+注意:对于F版本以上的SpringCloud对应的Eureka版本,
+
 对于多个生产者的选择使用轮询机制进行访问.
 
 #### Eureka的自我保护机制(高可用)
@@ -252,7 +254,32 @@ eureka:
 
 #### Eureka平滑上下线
 
+服务下线:即某服务不能对外提供服务了.
 
+除了由于Eureka Client宕机或者网络原因导致Eureka Server长时间没有接收到client的心跳而将其剔除出了注册表外,我们也可以主动是某个服务下线.两种方式:
+
+服务下架和状态修改.这两种方式都是基于Actuator监控器实现的.
+
+添加actuator依赖:
+
+```java
+ <dependency>
+     <groupId>org.springframework.boot</groupId>
+     <artifactId>spring-boot-starter-actuator</artifactId>
+ </dependency>
+```
+
+服务下架:直接停止该服务.
+
+![1593604455954](C:\Users\semon\AppData\Roaming\Typora\typora-user-images\1593604455954.png)
+
+服务下线:指的是在Eureka注册中心该服务状态变更为down
+
+![1593604510538](C:\Users\semon\AppData\Roaming\Typora\typora-user-images\1593604510538.png)
+
+服务上线:Eureka注册中心变成UP的状态.
+
+![1593604562892](C:\Users\semon\AppData\Roaming\Typora\typora-user-images\1593604562892.png)
 
 #### Eureka的常见配置
 
@@ -264,12 +291,231 @@ eureka:
 
 
 
+## SpringCloud-OpenFegin和Ribbon
 
 
 
+### OpenFegin简介
+
+ Feign 是一个声明式的Web服务客户端，让编写Web服务客户端变得非常容易，只需 创建一个接口并在接口上添加注解 即可 
+
+OpenFegin可以将服务提供者提供的Restful服务伪装为接口进行消费,消费者只需使用Feign接口+注解的方式即可调用提供者提供的Restful服务,而无需再使用RestTemplate.
+
+#### OpenFegin和Fegin的区别:
+
+SpringCloud D版本以及之前的版本使用的是Fegin,而该项目已经更新为OpenFegin,所以依赖发生了改变.
+
+#### OpenFegin和Ribbon
+
+Ribbon是Netflix公司的一个开源的负载均衡项目,是一个客户端负载均衡器,运行在消费这端.
+
+OpenFeign也是运行在消费者端的,使用Ribbon进行负载均衡,所以OpenFegin直接内置了Ribbon.即在导入了OpenFeign依赖后,无需再专门导入Ribbon依赖了.
+
+### OpenFegin实战
+
+1.在消费端pom中添加openfeign依赖
+
+```
+  <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-openfeign</artifactId>
+        </dependency>
+```
+
+2.在启动类上添加开启Feign客户端的注解
+
+```java
+package com.aaron;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.openfeign.EnableFeignClients;
+
+@SpringBootApplication
+@EnableDiscoveryClient //开启服务发现功能
+@EnableFeignClients //开启Feign客户端 可以指定service接口所在包
+public class Application {
+
+    public static void main(String[] args) {
+        SpringApplication.run(Application.class, args);
+    }
+
+}
+
+```
+
+3.添加feign的一些配置项
+
+```java
+#server config
+server:
+  port: 9003
+
+#eureka config
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eurekaserver7001.com:7001/eureka,http://eurekaserver7002.com:7002/eureka,http://eurekaserver7003.com:7003/eureka
+  instance:
+    instance-id: 03-consumer-9003
+
+#微服务对外暴露的名称
+spring:
+  application:
+    name: openfeginconsumer
+
+#actuator 配置
+management:
+  #开启所有终端监控
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  #开启shutdown监控终端
+  endpoint:
+    shutdown:
+      enabled: true
+
+#Open Feign config
+#超时设置
+feign:
+  client:
+    config:
+      feignName:
+        connectTimeout: 5000 # 连接超时时间5s
+        readTimeout: 5000    # 整个相应超时时间
+
+```
 
 
 
+4.创建OpenFeign声明式接口
+
+```java
+package com.aaron.service;
+
+import com.aaron.domain.Depart;
+import org.springframework.cloud.openfeign.FeignClient;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 
+/**
+ * 声明为feign接口 指定调用者的spring.application.name 其他类似于springmvc
+ */
+@FeignClient("eurekaprovider")
+@RequestMapping("/provider/depart/")
+public interface DepartService {
+
+    @PostMapping
+    boolean saveDepart(@RequestBody Depart depart);
+
+    @PutMapping
+    boolean updateDepart(@RequestBody Depart depart);
+
+    @DeleteMapping("/{id}")
+    boolean deleteDepart(@PathVariable("id") Integer id);
+
+    @GetMapping("/{id}")
+    Depart getDepart(@PathVariable("id") Integer id);
+
+    @GetMapping
+    List<Depart> getDeparts();
+}
+
+```
+
+5.在消费端使用声明的feign接口
+
+```java
+package com.aaron.controller;
+
+import com.aaron.domain.Depart;
+import com.aaron.service.DepartService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.client.RestTemplate;
+
+import java.net.URI;
+import java.util.List;
+
+/**
+ * 消费者控制器 改造成使用feign
+ */
+@RestController
+@RequestMapping("/consumer/depart")
+public class DepartController {
+    //不再使用RestTemplate
+    //    @Autowired
+    //    private RestTemplate restTemplate;
+
+    @Autowired
+    private DepartService departService;
+
+    @Autowired
+    private DiscoveryClient client;
+    //修改成使用spring.application.name的方式进行访问
+    private static final String SERVICE_PROVIDER = "http://eurekaprovider/";
+
+    //private static final String SERVICE_DEPART_URL = SERVICE_PROVIDER + "/provider/depart/";
+
+    @PostMapping
+    public boolean saveDepart(@RequestBody Depart depart) {
+//        return restTemplate.postForObject(SERVICE_DEPART_URL, depart, Boolean.class);
+        return departService.saveDepart(depart);
+    }
+
+    @PutMapping
+    public boolean updateDepart(@RequestBody Depart depart) {
+//        return restTemplate.postForObject(SERVICE_DEPART_URL, depart, Boolean.class);
+        return departService.updateDepart(depart);
+    }
+
+    @DeleteMapping("/{id}")
+    public boolean deleteDepart(@PathVariable("id") Integer id) {
+//        restTemplate.delete(SERVICE_DEPART_URL + id);
+        return departService.deleteDepart(id);
+    }
+
+    @GetMapping
+    public List<Depart> getDeparts() {
+//        return restTemplate.getForObject(SERVICE_DEPART_URL, List.class);
+        return departService.getDeparts();
+    }
+
+    @GetMapping("/{id}")
+    public Depart getDepart(@PathVariable("id") Integer id) {
+//        return restTemplate.getForObject(SERVICE_DEPART_URL + id, Depart.class);
+        return departService.getDepart(id);
+    }
+
+    @GetMapping("/discovery")
+    public Object discoveryHandler() {
+        //获取注册中心中所有的服务名称 即spring.application.name
+        List<String> services = client.getServices();
+        for (String name : services) {
+            //获取每个application.name对应的服务实例
+            List<ServiceInstance> instances = client.getInstances(name);
+            for (ServiceInstance instance : instances) {
+                //获取每个实例的instanceId 即eureka.client.instance.instance.id
+                String instanceId = instance.getInstanceId();
+                //获取服务提供者的uri,主机名和端口号
+                URI uri = instance.getUri();
+                String host = instance.getHost();
+                int port = instance.getPort();
+                System.out.println(instanceId + ":" + uri);
+                System.out.println(host + ":" + port);
+            }
+        }
+        return services;
+    }
+
+}
+```
+
+从原来使用RestTemplate方式调用http接口改造成使用feign的形式,进行调用.
 
