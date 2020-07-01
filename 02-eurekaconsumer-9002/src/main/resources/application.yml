@@ -9,8 +9,22 @@ eureka:
       defaultZone: http://eurekaserver7001.com:7001/eureka,http://eurekaserver7002.com:7002/eureka,http://eurekaserver7003.com:7003/eureka
   instance:
     instance-id: 02-consumer-9002
+
+#微服务对外暴露的名称
 spring:
   application:
-    name: eurekaconsumer #微服务对外暴露的名称
+    name: eurekaconsumer
+
+#actuator 配置
+management:
+  #开启所有终端监控
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  #开启shutdown监控终端
+  endpoint:
+    shutdown:
+      enabled: true
 
 
