@@ -1,0 +1,39 @@
+#server config
+server:
+  port: 9003
+
+#eureka config
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eurekaserver7001.com:7001/eureka,http://eurekaserver7002.com:7002/eureka,http://eurekaserver7003.com:7003/eureka
+  instance:
+    instance-id: 03-consumer-9003
+
+#微服务对外暴露的名称
+spring:
+  application:
+    name: openfeginconsumer
+
+#actuator 配置
+management:
+  #开启所有终端监控
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+  #开启shutdown监控终端
+  endpoint:
+    shutdown:
+      enabled: true
+
+#Open Feign config
+#超时设置
+feign:
+  client:
+    config:
+      feignName:
+        connectTimeout: 5000 # 连接超时时间5s
+        readTimeout: 5000    # 整个相应超时时间
+
+

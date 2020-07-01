@@ -54,6 +54,14 @@ public class DepartServiceImpl implements IDepartService {
 
     @Override
     public List<Depart> getList() {
+        //模拟调用超时 判断Feign的超时设置是否有效
+        try {
+            System.out.println("模拟超时");
+            Thread.sleep(10000);
+            System.out.println("模拟超时结束");
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         return departRepository.findAll();
     }
 }
